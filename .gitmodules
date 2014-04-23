@@ -1,0 +1,3 @@
+[submodule "faith-core"]
+	path = faith-core
+	url = https://github.com/tangarr/faith-core.git
