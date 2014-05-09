@@ -8,7 +8,7 @@ DhcpObject::~DhcpObject()
 {
 }
 
-QString DhcpObject::spaces(int level)
+QString DhcpObject::spaces(int level) const
 {
     QString out="";
     for (int i=0; i<level; i++) out+="\t";

@@ -7,8 +7,8 @@ class DhcpComment : public DhcpObject
 {
     QString comment;
 public:
-    DhcpComment();
-    QString toString(int level);
+    DhcpComment(QString comment);
+    QString toString(int level) const;
 };
 
 #endif // DHCPCOMMENT_H

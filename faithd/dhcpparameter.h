@@ -8,8 +8,8 @@ class DhcpParameter : public DhcpObject
 private:
     QString parameter;
 public:
-    DhcpParameter();
-    QString toString(int level);
+    DhcpParameter(QString parameter);
+    QString toString(int level) const;
 };
 
 #endif // DHCPPARAMETER_H

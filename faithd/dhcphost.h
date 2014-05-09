@@ -1,10 +1,13 @@
 #ifndef DHCPHOST_H
 #define DHCPHOST_H
 
-class DhcpHost
+#include "dhcpblock.h"
+
+class DhcpHost : public DhcpBlock
 {
 public:
-    DhcpHost();
+    DhcpHost(QString hostname);
+    virtual QString toString(int level) const;
 };
 
 #endif // DHCPHOST_H

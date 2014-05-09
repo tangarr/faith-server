@@ -1,10 +1,11 @@
 #include "dhcpparameter.h"
 
-DhcpParameter::DhcpParameter()
+DhcpParameter::DhcpParameter(QString parameter)
 {
+    this->parameter = parameter;
 }
 
-QString DhcpParameter::toString(int level)
+QString DhcpParameter::toString(int level) const
 {
-   return spaces(level)+parameter;
+   return spaces(level)+parameter+";";
 }

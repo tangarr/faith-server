@@ -1,7 +1,18 @@
 #include "dhcpblock.h"
 
-DhcpBlock::DhcpBlock()
+QList<DhcpObject *> DhcpBlock::getChildren() const
 {
+    return children;
+}
+
+QString DhcpBlock::getValue() const
+{
+    return block;
+}
+
+DhcpBlock::DhcpBlock(QString block)
+{
+    this->block=block;
 }
 
 DhcpBlock::~DhcpBlock()
@@ -12,7 +23,7 @@ DhcpBlock::~DhcpBlock()
     children.clear();
 }
 
-QString DhcpBlock::toString(int level)
+QString DhcpBlock::toString(int level) const
 {
     QString out = spaces(level) + block + "{\n";
     foreach (DhcpObject* ob, children) {
@@ -20,4 +31,14 @@ QString DhcpBlock::toString(int level)
     }
     out += spaces(level) + "}";
     return out;
+}
+
+void DhcpBlock::append(QList<DhcpObject *>list)
+{
+    children.append(list);
+}
+
+void DhcpBlock::append(DhcpObject *child)
+{
+    children.append(child);
 }
