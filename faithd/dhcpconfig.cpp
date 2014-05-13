@@ -85,7 +85,7 @@ QList<DhcpObject*> parseDhcp(const QString config, int &position)
                     block = new DhcpBlock(bufor);
                 bufor.clear();
                 QList<DhcpObject*> tmp=parseDhcp(config, position);
-                block->append(tmp);
+                block->appendList(tmp);
                 list.append(block);
                 newLine = false;
             }
@@ -136,6 +136,7 @@ bool DhcpConfig::readConfiguration(QString filename)
         delete ob;
     }
     config.clear();
+    hosts.clear();
     QString dhcpd_conf;
     QFile file(filename);
     if (file.open(QIODevice::ReadOnly | QFile::Text))
@@ -145,7 +146,10 @@ bool DhcpConfig::readConfiguration(QString filename)
         file.close();
         int pos=0;
         config.append(parseDhcp(dhcpd_conf, pos));
-
+        foreach (DhcpObject* ob, config) {
+            DhcpBlock* block = dynamic_cast<DhcpBlock*>(ob);
+            if (block) hosts.append(block->getHosts());
+        }
         return true;
     }
     else return false;
@@ -154,9 +158,53 @@ bool DhcpConfig::readConfiguration(QString filename)
 
 bool DhcpConfig::writeConfiguration(QString filename) const
 {
+
     qDebug() << filename;
     foreach (DhcpObject* ob, config) {
         qDebug(ob->toString(0).toStdString().c_str());
+    }
+
+    return false;
+}
+
+bool DhcpConfig::containsHostname(const QString &hostname) const
+{
+    foreach (DhcpHost* host, hosts) {
+        if (host->hostname().compare(hostname, Qt::CaseInsensitive)) return true;
+    }
+    return false;
+}
+
+bool DhcpConfig::containsIp(const QString &ip) const
+{
+    const QRegExp regexp("(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9]\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])");
+    if (!regexp.exactMatch(ip)) return false;
+    foreach (DhcpHost* host, hosts) {
+        QStringList a,b;
+        a = ip.split(".");
+        b = host->ip().split(".");
+        for (int i=0; i<4; i++)
+        {
+            if (a[i].toInt()!=b[i].toInt()) return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+bool DhcpConfig::containHw(const QString &hw) const
+{
+    const QRegExp regexp("([0-9a-f]:){5}([0-9a-f])");
+    if (!regexp.exactMatch(hw)) return false;
+    foreach (DhcpHost* host, hosts) {
+        QStringList a,b;
+        a = hw.split(":");
+        b = host->hw().split(":");
+        for (int i=0; i<6; i++)
+        {
+            if (a[i].toInt(0,16)!=b[i].toInt(0,16)) return false;
+        }
+        return true;
     }
     return false;
 }

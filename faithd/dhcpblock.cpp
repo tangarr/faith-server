@@ -1,4 +1,5 @@
 #include "dhcpblock.h"
+#include "dhcphost.h"
 
 QList<DhcpObject *> DhcpBlock::getChildren() const
 {
@@ -8,6 +9,11 @@ QList<DhcpObject *> DhcpBlock::getChildren() const
 QString DhcpBlock::getValue() const
 {
     return block;
+}
+
+void DhcpBlock::setValue(const QString value)
+{
+    block = value;
 }
 
 DhcpBlock::DhcpBlock(QString block)
@@ -33,9 +39,31 @@ QString DhcpBlock::toString(int level) const
     return out;
 }
 
-void DhcpBlock::append(QList<DhcpObject *>list)
+void DhcpBlock::appendList(QList<DhcpObject *>list)
 {
-    children.append(list);
+    foreach (DhcpObject* child, list) {
+        append(child);
+    }
+}
+
+QList<DhcpHost *> DhcpBlock::getHosts()
+{
+    QList<DhcpHost *> list;
+
+    if (dynamic_cast<DhcpHost*>(this))
+    {
+        list.append(dynamic_cast<DhcpHost*>(this));
+    }
+    else foreach (DhcpObject* ob, children) {
+        DhcpHost* host = dynamic_cast<DhcpHost*>(ob);
+        if (host) list.append(host);
+        else
+        {
+            DhcpBlock* block = dynamic_cast<DhcpBlock*>(ob);
+            if (block) list.append(block->getHosts());
+        }
+    }
+    return list;
 }
 
 void DhcpBlock::append(DhcpObject *child)

@@ -7,5 +7,10 @@ DhcpParameter::DhcpParameter(QString parameter)
 
 QString DhcpParameter::toString(int level) const
 {
-   return spaces(level)+parameter+";";
+    return spaces(level)+parameter+";";
+}
+
+QString DhcpParameter::value() const
+{
+    return parameter;
 }

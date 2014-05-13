@@ -10,6 +10,7 @@ private:
 public:
     DhcpParameter(QString parameter);
     QString toString(int level) const;
+    QString value() const;
 };
 
 #endif // DHCPPARAMETER_H
