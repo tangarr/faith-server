@@ -23,7 +23,8 @@ SOURCES += main.cpp \
     dhcpcomment.cpp \
     dhcpblock.cpp \
     dhcphost.cpp \
-    dhcpemptyline.cpp
+    dhcpemptyline.cpp \
+    hostscontainer.cpp
 
 win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../faith-core/release/ -lfaith-core
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../faith-core/debug/ -lfaith-core
@@ -46,4 +47,5 @@ HEADERS += \
     dhcpcomment.h \
     dhcpblock.h \
     dhcphost.h \
-    dhcpemptyline.h
+    dhcpemptyline.h \
+    hostscontainer.h
