@@ -5,10 +5,12 @@
 int main(int argc, char *argv[])
 {    
     QCoreApplication a(argc, argv);
-    if (!Config::instance().read_config()) exit(1);
     DhcpConfig dhcp_config;
-    dhcp_config.readConfiguration("/etc/dhcp/dhcpd.conf");
-    dhcp_config.writeConfiguration("/etc/dhcp/dhcpd.conf");
+
+    if (!Config::instance().read_config()) exit(1);
+    if (!dhcp_config.readConfiguration("/etc/dhcp/dhcpd.conf")) exit(1);
+
+    dhcp_config.writeConfiguration("/tmp/dhcpd.conf");
 
     return a.exec();
 }

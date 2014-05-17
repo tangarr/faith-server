@@ -34,7 +34,8 @@ bool Config::ip_validate(const QString &ip, const QList<QPair<QHostAddress,int> 
 
 }
 
-bool Config::read_config()
+bool Config::
+read_config()
 {
     QList<QPair<QHostAddress,int> > interfaces;
 

@@ -16,6 +16,9 @@ public:
     bool containsHostname(const QString &hostname) const;
     bool containsIp(const QString &ip) const;
     bool containHw(const QString &hw) const;
+    DhcpHost *hostByIp(const QString &ip) const;
+    DhcpHost *hostByHw(const QString &hw) const;
+    DhcpHost *hostByName(const QString &hostname) const;
 };
 
 #endif // DHCPCONFIG_H
