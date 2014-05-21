@@ -50,13 +50,13 @@ bool Config::read_config()
     }
     ifaces_tmp.clear();
 
-    QFile file(settings_file);
+    QFile file(_settings_file);
     if (!file.exists())
     {
         qDebug() << "Config file not found!";
         return false;
     }
-    QSettings settings(settings_file, QSettings::IniFormat);
+    QSettings settings(_settings_file, QSettings::IniFormat);
     if (!settings.contains("port"))
     {
         qDebug() << "Config doesn't contain 'port' value";
@@ -65,7 +65,7 @@ bool Config::read_config()
     else
     {
         bool ok;
-        port = settings.value("port").toInt(&ok);
+        _port = settings.value("port").toInt(&ok);
         if (!ok)
         {
             qDebug() << "'port' value is not valid";
@@ -79,11 +79,11 @@ bool Config::read_config()
     }
     else
     {
-        config_dir = settings.value("config_dir").toString();
-        QDir dir(config_dir);
+        _config_dir = settings.value("config_dir").toString();
+        QDir dir(_config_dir);
         if (!dir.exists())
         {
-            qDebug() << "Config direcotry"<<config_dir<<"doesn't exist";
+            qDebug() << "Config direcotry"<<_config_dir<<"doesn't exist";
             return false;
         }
     }
@@ -137,9 +137,14 @@ bool Config::read_config()
             qDebug() << lab << ": 'ip_start' couldn't be less than 'ip_end'";
             return false;
         }
-        laboratories.append(new ComputerLab(lab, ip_start, ip_end));
+        _laboratories.append(new ComputerLab(lab, ip_start, ip_end));
     }
 
     qDebug() << "Configuration... OK";
     return true;
+}
+
+quint16 Config::port() const
+{
+    return _port;
 }

@@ -1,6 +1,6 @@
 #include "config.h"
-
 #include "dhcpconfig.h"
+#include "server.h"
 
 int main(int argc, char *argv[])
 {    
@@ -12,5 +12,8 @@ int main(int argc, char *argv[])
 
     dhcp_config.writeConfiguration("/tmp/dhcpd.conf");
 
-    return a.exec();
+    Server server(Config::instance().port());
+    server.acceptConnection();
+
+    return 0;
 }
