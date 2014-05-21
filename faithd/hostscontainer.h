@@ -21,7 +21,7 @@ public:
     DhcpHost *hostByName(const QString &hostname) const;
     void appendHost(DhcpHost* host);
     void appendHost(QList<DhcpHost*> host);
-
+    void removeHost(DhcpHost* host);
 };
 
 #endif // HOSTSCONTAINER_H

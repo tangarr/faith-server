@@ -1,6 +1,8 @@
 #include "hostscontainer.h"
 #include <QRegExp>
 #include <QStringList>
+#include "dhcphost.h"
+#include "faithcore.h"
 
 void HostsContainer::clearHostsList()
 {
@@ -30,15 +32,9 @@ bool HostsContainer::containsIp(const QString &ip) const
 {
     const QRegExp regexp("(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9]\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])");
     if (!regexp.exactMatch(ip)) return false;
+    quint32 ip_a = Faithcore::ipFromString(ip);
     foreach (DhcpHost* host, hosts) {
-        QStringList a,b;
-        a = ip.split(".");
-        b = host->ip().split(".");
-        for (int i=0; i<4; i++)
-        {
-            if (a[i].toInt()!=b[i].toInt()) return false;
-        }
-        return true;
+        if (ip_a == host->ip()) return true;
     }
     return false;
 }
@@ -64,18 +60,11 @@ DhcpHost *HostsContainer::hostByIp(const QString &ip) const
 {
     const QRegExp regexp("(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9]\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])");
     if (!regexp.exactMatch(ip)) return 0;
+    quint32 ip_a = Faithcore::ipFromString(ip);
     foreach (DhcpHost* host, hosts) {
-        QStringList a,b;
-        a = ip.split(".");
-        b = host->ip().split(".");
-        for (int i=0; i<4; i++)
-        {
-            if (a[i].toInt()!=b[i].toInt()) return host;
-        }
-        return 0;
+        if (ip_a == host->ip()) return host;
     }
     return 0;
-
 }
 
 DhcpHost *HostsContainer::hostByHw(const QString &hw) const
@@ -105,10 +94,18 @@ DhcpHost *HostsContainer::hostByName(const QString &hostname) const
 
 void HostsContainer::appendHost(DhcpHost *host)
 {
+    host->addObserver(this);
     hosts.append(host);
 }
 
-void HostsContainer::appendHost(QList<DhcpHost *> host)
+void HostsContainer::appendHost(QList<DhcpHost *> hostsList)
 {
-    hosts.append(host);
+    foreach (DhcpHost* host, hostsList) {
+        appendHost(host);
+    }
+}
+
+void HostsContainer::removeHost(DhcpHost *host)
+{
+    hosts.removeAll(host);
 }

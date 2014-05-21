@@ -1,5 +1,7 @@
 #include "dhcphost.h"
 #include "dhcpparameter.h"
+#include "hostscontainer.h"
+#include "faithcore.h"
 
 QString DhcpHost::hw() const
 {
@@ -11,12 +13,12 @@ void DhcpHost::setHw(const QString &hw)
     _hw = hw;
 }
 
-QString DhcpHost::ip() const
+quint32 DhcpHost::ip() const
 {
     return _ip;
 }
 
-void DhcpHost::setIp(const QString &ip)
+void DhcpHost::setIp(const quint32 &ip)
 {
     _ip = ip;
 }
@@ -32,7 +34,8 @@ void DhcpHost::append(DhcpObject *ob)
         }
         else if (par->value().startsWith("fixed-address "))
         {
-            setIp(par->value().remove(0, 13).trimmed());
+            QString ip = par->value().remove(0, 13).trimmed();
+            setIp(Faithcore::ipFromString(ip));
         }
         else if (par->value().startsWith("option host-name "))
         {
@@ -49,8 +52,21 @@ void DhcpHost::append(DhcpObject *ob)
     }
     else DhcpBlock::append(ob);
 }
+void DhcpHost::addObserver(HostsContainer *observer)
+{
+    observers.append(observer);
+}
+
 DhcpHost::DhcpHost(QString hostname) : DhcpBlock(hostname.trimmed())
 {
+    _ip = 0;
+}
+
+DhcpHost::~DhcpHost()
+{
+    foreach (HostsContainer* obs, observers) {
+        obs->removeHost(this);
+    }
 }
 
 QString DhcpHost::toString(int level) const
@@ -58,7 +74,7 @@ QString DhcpHost::toString(int level) const
     QString out=spaces(level)+"host "+getValue()+" {\n";
     out+=spaces((level+1))+"option host-name \""+hostname()+"\";\n";
     if (!hw().isEmpty()) out+=spaces((level+1))+"hardware ethernet "+hw()+";\n";
-    if (!ip().isEmpty()) out+=spaces((level+1))+"fixed-address "+ip()+";\n";
+    if (!ip()) out+=spaces((level+1))+"fixed-address "+ip()+";\n";
     foreach (DhcpObject* ob, getChildren()) {
         out+=ob->toString(level+1)+"\n";
     }

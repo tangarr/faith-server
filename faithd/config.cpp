@@ -34,8 +34,7 @@ bool Config::ip_validate(const QString &ip, const QList<QPair<QHostAddress,int> 
 
 }
 
-bool Config::
-read_config()
+bool Config::read_config()
 {
     QList<QPair<QHostAddress,int> > interfaces;
 
@@ -50,7 +49,6 @@ read_config()
         }
     }
     ifaces_tmp.clear();
-
 
     QFile file(settings_file);
     if (!file.exists())
@@ -139,6 +137,7 @@ read_config()
             qDebug() << lab << ": 'ip_start' couldn't be less than 'ip_end'";
             return false;
         }
+        laboratories.append(new ComputerLab(lab, ip_start, ip_end));
     }
 
     qDebug() << "Configuration... OK";

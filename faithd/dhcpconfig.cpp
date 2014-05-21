@@ -1,5 +1,4 @@
 #include "dhcpconfig.h"
-
 #include "dhcpcomment.h"
 #include "dhcpparameter.h"
 #include "dhcpblock.h"
