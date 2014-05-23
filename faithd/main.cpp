@@ -13,7 +13,8 @@ int main(int argc, char *argv[])
     dhcp_config.writeConfiguration("/tmp/dhcpd.conf");
 
     Server server(Config::instance().port());
-    server.acceptConnection();
+
+    while (true) server.acceptConnection();
 
     return 0;
 }

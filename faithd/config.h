@@ -27,6 +27,7 @@ public:
     bool ip_validate(const QString &ip, const QList<QPair<QHostAddress, int> > &interfaces, quint32 *ip_out = 0, quint32 *subnet_out = 0);
     bool read_config();
     quint16 port() const;
+    QStringList &labList() const;
 };
 
 #endif // CONFIG_H

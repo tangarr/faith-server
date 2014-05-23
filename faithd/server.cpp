@@ -2,6 +2,7 @@
 #include <QTcpSocket>
 #include <QDebug>
 #include "faithmessage.h"
+#include "config.h"
 
 Server::Server(quint16 port)
 {
@@ -17,7 +18,20 @@ void Server::acceptConnection()
         qDebug() << socket->peerAddress() << " connected";
         FaithMessage msg;
         msg.recive(socket);
-        qDebug() << msg.getMessageCode();
-        socket->close();
+
+        switch (msg.getMessageCode()) {
+        case Faithcore::GET_LAB_LIST:
+        {
+            qDebug() << "Message: GET_LAB_LIST";
+            FaithMessage resp = FaithMessage::MsgLabList(Config::instance().labList());
+            resp.send(socket);
+            break;
+        }
+        default:
+            qDebug() << "Message " << msg.getMessageCode() << " not implemented";
+            break;
+        }
+
+        socket->waitForDisconnected();
     }
 }

@@ -148,3 +148,13 @@ quint16 Config::port() const
 {
     return _port;
 }
+
+QStringList& Config::labList() const
+{
+    QStringList *list = new QStringList();
+    foreach (ComputerLab* lab, _laboratories)
+    {
+        list->append(lab->name());
+    }
+    return *list;
+}

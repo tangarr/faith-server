@@ -9,6 +9,7 @@ class ComputerLab : public HostsContainer
     quint32 _ip_start, _ip_end;
 public:
     ComputerLab(QString name, QString ip_start, QString ip_end);    
+    QString name() const;
 };
 
 #endif // COMPUTERLAB_H

@@ -7,3 +7,8 @@ ComputerLab::ComputerLab(QString name, QString ip_start, QString ip_end)
     _ip_start = Faithcore::ipFromString(ip_start);
     _ip_end = Faithcore::ipFromString(ip_end);
 }
+
+QString ComputerLab::name() const
+{
+    return _name;
+}
