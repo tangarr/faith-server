@@ -158,3 +158,11 @@ QStringList& Config::labList() const
     }
     return *list;
 }
+
+ComputerLab *Config::getLab(const QString &name)
+{
+    foreach (ComputerLab *l, _laboratories) {
+        if (l->name()==name) return l;
+    }
+    return 0;
+}

@@ -28,6 +28,7 @@ public:
     bool read_config();
     quint16 port() const;
     QStringList &labList() const;
+    ComputerLab *getLab(const QString& name);
 };
 
 #endif // CONFIG_H

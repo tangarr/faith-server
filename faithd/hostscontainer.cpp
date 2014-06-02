@@ -39,6 +39,14 @@ bool HostsContainer::containsIp(const QString &ip) const
     return false;
 }
 
+bool HostsContainer::containsIp(const quint32 &ip) const
+{
+    foreach (DhcpHost* host, hosts) {
+        if (ip == host->ip()) return true;
+    }
+    return false;
+}
+
 bool HostsContainer::containHw(const QString &hw) const
 {
     const QRegExp regexp("([0-9a-f]:){5}([0-9a-f])");

@@ -15,6 +15,7 @@ public:
     HostsContainer();
     bool containsHostname(const QString &hostname) const;
     bool containsIp(const QString &ip) const;
+    bool containsIp(const quint32 &ip) const;
     bool containHw(const QString &hw) const;
     DhcpHost *hostByIp(const QString &ip) const;
     DhcpHost *hostByHw(const QString &hw) const;
