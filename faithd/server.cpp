@@ -43,10 +43,37 @@ void Server::acceptConnection()
         qDebug() << "Message: " + Faithcore::MessageCodeToString(msg.getMessageCode());
 
         switch (msg.getMessageCode()) {
-        case Faithcore::GET_LAB_LIST:
-        {            
-            FaithMessage resp = FaithMessage::MsgLabList(Config::instance().labList());
-            resp.send(socket);
+        case Faithcore::GET_LAB_LIST_OR_HOST_INFO:
+        {
+            FdString* value = static_cast<FdString*>(msg.getData());
+            if (value)
+            {
+                ComputerLab* lab = 0;
+                QString mac = value->value();
+                foreach (QString lab_name, Config::instance().labList()) {
+                    ComputerLab* tmp = Config::instance().getLab(lab_name);
+                    if (tmp->containHw(mac))
+                    {
+                        lab = tmp;
+                        break;
+                    }
+                }
+                if (lab)
+                {
+                    DhcpHost* host = lab->hostByHw(mac);
+                    FaithMessage resp = FaithMessage::MsgHostInfo(lab->name(), host->hostname(), host->ip());
+                    resp.send(socket);
+                }
+                else
+                {
+                    FaithMessage resp = FaithMessage::MsgLabList(Config::instance().labList());
+                    resp.send(socket);
+                }
+            }
+            else
+            {
+                FaithMessage::MsgError("can't extract FaithString from data").send(socket);
+            }
             break;
         }
         case Faithcore::RESERVE_IP:
