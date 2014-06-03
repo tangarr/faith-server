@@ -9,8 +9,9 @@
 class DhcpConfig : public HostsContainer
 {
     QList<DhcpObject*> config;        
-public:
     DhcpConfig();
+public:
+    static DhcpConfig &instance();
     bool readConfiguration(QString filename);
     bool writeConfiguration(QString filename) const;
 };

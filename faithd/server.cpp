@@ -4,6 +4,8 @@
 #include "faithmessage.h"
 #include "config.h"
 #include "fdstring.h"
+#include "fdhostinfo.h"
+#include "dhcpconfig.h"
 
 QString generate_hostname(ComputerLab *lab, quint32 ip)
 {
@@ -105,6 +107,78 @@ void Server::acceptConnection()
                 FaithMessage::MsgError("can't extract FaithString from data").send(socket);
             }
             break;
+        }
+        case Faithcore::ACCEPT_IP:
+        {
+            FdHostInfo *hinfo = static_cast<FdHostInfo*>(msg.getData());
+            if (hinfo)
+            {
+                DhcpHost* host_by_hw, *host_by_ip, *host_by_hostname;
+                host_by_hw = DhcpConfig::instance().hostByHw(hinfo->mac());
+                host_by_ip = DhcpConfig::instance().hostByIp(hinfo->ip_string());
+                host_by_hostname = DhcpConfig::instance().hostByIp(hinfo->ip_string());
+                if (host_by_hw)
+                {
+                    if (host_by_ip && host_by_ip!=host_by_hw)
+                    {
+                        FaithMessage::MsgError("ip already taken by diferent host").send(socket);
+                        break;
+                    }
+                    if (host_by_hostname && host_by_hostname!=host_by_hw)
+                    {
+                        FaithMessage::MsgError("hostname already taken by diferent host").send(socket);
+                        break;
+                    }
+                }
+                else
+                {
+                    if (host_by_ip)
+                    {
+                        FaithMessage::MsgError("ip already taken by diferent host").send(socket);
+                        break;
+                    }
+                    if (host_by_hostname)
+                    {
+                        FaithMessage::MsgError("hostname already taken by diferent host").send(socket);
+                        break;
+                    }
+                }
+                ComputerLab *lab = Config::instance().getLab(hinfo->lab());
+                if (!lab)
+                {
+                    FaithMessage::MsgError("specified ComputerLab don't exist").send(socket);
+                    break;
+                }
+                if (hinfo->ip() < lab->ip_start() || hinfo->ip() > lab->ip_end())
+                {
+                    FaithMessage::MsgError("selected ip address don't belong to specified ComputerLab").send(socket);
+                    break;
+                }
+                bool newHost = false;
+                if (host_by_hw)
+                {
+                    if (!host_by_ip || !host_by_hostname)
+                    {
+                        delete host_by_hw;
+                        host_by_hw = 0;
+                        newHost = true;
+                    }
+                }
+                else newHost = true;
+                if (newHost)
+                {
+                    DhcpHost* host = new DhcpHost(hinfo->hostname());
+                    host->setHw(hinfo->mac());
+                    host->setIp(hinfo->ip());
+                    DhcpConfig::instance().appendHost(host);
+                    lab->appendHost(host);
+                }
+                FaithMessage::MsgOk().send(socket);
+            }
+            else
+            {
+                FaithMessage::MsgError("can't extract HostInfo from data").send(socket);
+            }
         }
         default:
             qDebug() << "Message " << Faithcore::MessageCodeToString(msg.getMessageCode()) << " not implemented";

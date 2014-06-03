@@ -12,6 +12,12 @@ DhcpConfig::DhcpConfig()
 {
 }
 
+DhcpConfig &DhcpConfig::instance()
+{
+    static DhcpConfig config;
+    return config;
+}
+
 QList<DhcpObject*> parseDhcp(const QString config, int &position)
 {
     QList<DhcpObject*> list;

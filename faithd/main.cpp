@@ -5,7 +5,7 @@
 int main(int argc, char *argv[])
 {    
     QCoreApplication a(argc, argv);
-    DhcpConfig dhcp_config;
+    DhcpConfig dhcp_config=DhcpConfig::instance();
 
     if (!Config::instance().read_config()) exit(1);
     if (!dhcp_config.readConfiguration("/etc/dhcp/dhcpd.conf")) exit(1);
