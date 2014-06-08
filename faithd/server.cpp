@@ -6,6 +6,7 @@
 #include "fdstring.h"
 #include "fdhostinfo.h"
 #include "dhcpconfig.h"
+#include "fdfile.h"
 
 QString generate_hostname(ComputerLab *lab, quint32 ip)
 {
@@ -166,6 +167,40 @@ void Server::acceptConnection()
             {
                 FaithMessage::MsgError("can't extract HostInfo from data").send(socket);
             }
+            break;
+        }
+        case Faithcore::SEND_FILE:
+        {
+            FdFile* file = static_cast<FdFile*>(msg.getData());
+            if (file)
+            {
+                if (file->data().isEmpty())
+                {
+                    FaithMessage::MsgError("Recived FdFile have no data").send(socket);
+                    break;
+                }
+                else if (file->filename().isEmpty())
+                {
+                    FaithMessage::MsgError("Recived FdFile have no filename").send(socket);
+                    break;
+                }
+                if (file->filename()!="host.db")
+                {
+                    FaithMessage::MsgError("Server was expecting to recive file host.db").send(socket);
+                    break;
+                }
+                //----------------------------------------//
+                //TODO: Validate file data with DhcpConfig//
+                //----------------------------------------//
+                quint32 ip = 0;
+                QString new_filename = QString::number(ip, 16).rightJustified(8, '0')+".db";
+                file->saveFile(Config::instance().configDir()+"/"+new_filename);
+            }
+            else
+            {
+                FaithMessage::MsgError("can't extract FdFile from data").send(socket);
+            }
+            break;
         }
         default:
             qDebug() << "Message " << Faithcore::MessageCodeToString(msg.getMessageCode()) << " not implemented";
