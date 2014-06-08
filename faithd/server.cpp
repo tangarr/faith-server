@@ -169,6 +169,7 @@ void Server::acceptConnection()
         }
         default:
             qDebug() << "Message " << Faithcore::MessageCodeToString(msg.getMessageCode()) << " not implemented";
+            FaithMessage::MsgError("Message " + Faithcore::MessageCodeToString(msg.getMessageCode()) + " not implemented").send(socket);
             break;
         }
         socket->disconnectFromHost();
