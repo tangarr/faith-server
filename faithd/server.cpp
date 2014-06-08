@@ -112,21 +112,33 @@ void Server::acceptConnection()
         {
             FdHostInfo *hinfo = static_cast<FdHostInfo*>(msg.getData());
             if (hinfo)
-            {
+            {                
                 DhcpHost* host_by_hw, *host_by_ip, *host_by_hostname;
                 host_by_hw = DhcpConfig::instance().hostByHw(hinfo->mac());
                 host_by_ip = DhcpConfig::instance().hostByIp(hinfo->ip_string());
                 host_by_hostname = DhcpConfig::instance().hostByIp(hinfo->ip_string());
+
+                ComputerLab *lab = Config::instance().getLab(hinfo->lab());
+                if (!lab)
+                {
+                    FaithMessage::MsgError("specified ComputerLab don't exist").send(socket);
+                    break;
+                }
+                if (hinfo->ip() < lab->ip_start() || hinfo->ip() > lab->ip_end())
+                {
+                    FaithMessage::MsgError("selected ip address don't belong to specified ComputerLab").send(socket);
+                    break;
+                }
                 if (host_by_hw)
                 {
-                    if (host_by_ip && host_by_ip!=host_by_hw)
+                    if (host_by_hw!=host_by_ip)
                     {
-                        FaithMessage::MsgError("ip already taken by diferent host").send(socket);
+                        FaithMessage::MsgError("you can't change ip from this application").send(socket);
                         break;
                     }
-                    if (host_by_hostname && host_by_hostname!=host_by_hw)
+                    if (host_by_hw!=host_by_hostname)
                     {
-                        FaithMessage::MsgError("hostname already taken by diferent host").send(socket);
+                        FaithMessage::MsgError("you can't change hostname from this application").send(socket);
                         break;
                     }
                 }
@@ -142,31 +154,6 @@ void Server::acceptConnection()
                         FaithMessage::MsgError("hostname already taken by diferent host").send(socket);
                         break;
                     }
-                }
-                ComputerLab *lab = Config::instance().getLab(hinfo->lab());
-                if (!lab)
-                {
-                    FaithMessage::MsgError("specified ComputerLab don't exist").send(socket);
-                    break;
-                }
-                if (hinfo->ip() < lab->ip_start() || hinfo->ip() > lab->ip_end())
-                {
-                    FaithMessage::MsgError("selected ip address don't belong to specified ComputerLab").send(socket);
-                    break;
-                }
-                bool newHost = false;
-                if (host_by_hw)
-                {
-                    if (!host_by_ip || !host_by_hostname)
-                    {
-                        delete host_by_hw;
-                        host_by_hw = 0;
-                        newHost = true;
-                    }
-                }
-                else newHost = true;
-                if (newHost)
-                {
                     DhcpHost* host = new DhcpHost(hinfo->hostname());
                     host->setHw(hinfo->mac());
                     host->setIp(hinfo->ip());
