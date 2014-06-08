@@ -10,10 +10,12 @@ class DhcpConfig : public HostsContainer
 {
     QList<DhcpObject*> config;        
     DhcpConfig();
+    QString _current_dhcp_file;
 public:
     static DhcpConfig &instance();
     bool readConfiguration(QString filename);
     bool writeConfiguration(QString filename) const;
+    QString current_dhcp_file() const;
 };
 
 #endif // DHCPCONFIG_H

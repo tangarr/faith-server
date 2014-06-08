@@ -11,6 +11,10 @@
 DhcpConfig::DhcpConfig()
 {
 }
+QString DhcpConfig::current_dhcp_file() const
+{
+    return _current_dhcp_file;
+}
 
 DhcpConfig &DhcpConfig::instance()
 {
@@ -137,6 +141,7 @@ QList<DhcpObject*> parseDhcp(const QString config, int &position)
 
 bool DhcpConfig::readConfiguration(QString filename)
 {
+    _current_dhcp_file = filename;
     foreach (DhcpObject* ob, config) {
         delete ob;
     }
