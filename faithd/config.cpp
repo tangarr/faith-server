@@ -166,3 +166,8 @@ ComputerLab *Config::getLab(const QString &name)
     }
     return 0;
 }
+
+QString Config::configDir() const
+{
+    return _config_dir;
+}

@@ -29,6 +29,7 @@ public:
     quint16 port() const;
     QStringList &labList() const;
     ComputerLab *getLab(const QString& name);
+    QString configDir() const;
 };
 
 #endif // CONFIG_H
