@@ -74,7 +74,7 @@ QString DhcpHost::toString(int level) const
     QString out=spaces(level)+"host "+getValue()+" {\n";
     out+=spaces((level+1))+"option host-name \""+hostname()+"\";\n";
     if (!hw().isEmpty()) out+=spaces((level+1))+"hardware ethernet "+hw()+";\n";
-    if (!ip()) out+=spaces((level+1))+"fixed-address "+ip()+";\n";
+    if (ip()) out+=spaces((level+1))+"fixed-address "+Faithcore::ipFromInt(ip())+";\n";
     foreach (DhcpObject* ob, getChildren()) {
         out+=ob->toString(level+1)+"\n";
     }

@@ -16,6 +16,7 @@ public:
     bool readConfiguration(QString filename);
     bool writeConfiguration(QString filename=QString()) const;
     QString current_dhcp_file() const;
+    void appendHost(DhcpHost *host);
 };
 
 #endif // DHCPCONFIG_H

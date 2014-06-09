@@ -20,8 +20,8 @@ public:
     DhcpHost *hostByIp(const QString &ip) const;
     DhcpHost *hostByHw(const QString &hw) const;
     DhcpHost *hostByName(const QString &hostname) const;
-    void appendHost(DhcpHost* host);
-    void appendHost(QList<DhcpHost*> host);
+    virtual void appendHost(DhcpHost* host);
+    void appendHostList(QList<DhcpHost*> host);
     void removeHost(DhcpHost* host);
     QList<DhcpHost *> hosts() const;
 };

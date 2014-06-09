@@ -184,7 +184,9 @@ void AcceptMessageAcceptIP(FaithMessage &msg, QTcpSocket* socket)
             host->setIp(hinfo->ip());
             DhcpConfig::instance().appendHost(host);
             lab->appendHost(host);
-            DhcpConfig::instance().writeConfiguration();
+            bool succes = DhcpConfig::instance().writeConfiguration();
+            if (succes) qDebug() << DhcpConfig::instance().current_dhcp_file() << " written";
+            else qDebug() << "can't write " << DhcpConfig::instance().current_dhcp_file();
         }
         FaithMessage::MsgOk().send(socket);
     }

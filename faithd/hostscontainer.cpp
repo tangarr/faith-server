@@ -106,7 +106,7 @@ void HostsContainer::appendHost(DhcpHost *host)
     _hosts.append(host);
 }
 
-void HostsContainer::appendHost(QList<DhcpHost *> hostsList)
+void HostsContainer::appendHostList(QList<DhcpHost *> hostsList)
 {
     foreach (DhcpHost* host, hostsList) {
         appendHost(host);
