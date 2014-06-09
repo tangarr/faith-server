@@ -8,6 +8,12 @@
 #include "dhcpconfig.h"
 #include "fdfile.h"
 
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QTemporaryFile>
+#include <QSqlError>
+#include <QHash>
+
 QString generate_hostname(ComputerLab *lab, quint32 ip)
 {
     int bytes;
@@ -30,6 +36,7 @@ QString generate_hostname(ComputerLab *lab, quint32 ip)
 Server::Server(quint16 port)
 {
     _server.listen(QHostAddress::AnyIPv4, port);
+    QSqlDatabase::addDatabase("QSQLITE");
 }
 
 void Server::acceptConnection()
@@ -189,12 +196,72 @@ void Server::acceptConnection()
                     FaithMessage::MsgError("Server was expecting to recive file host.db").send(socket);
                     break;
                 }
-                //----------------------------------------//
-                //TODO: Validate file data with DhcpConfig//
-                //----------------------------------------//
-                quint32 ip = 0;
-                QString new_filename = QString::number(ip, 16).rightJustified(8, '0')+".db";
-                file->saveFile(Config::instance().configDir()+"/"+new_filename);
+                QTemporaryFile tmp_file;
+                tmp_file.open();
+                tmp_file.close();
+                file->saveFile(tmp_file.fileName());
+                QSqlDatabase db = QSqlDatabase::database();
+                db.setDatabaseName(tmp_file.fileName());
+                if (db.open())
+                {
+                    QHash<QString, QString> general;
+                    QSqlQuery query("select * from general");
+                    while (query.next())
+                    {
+                        general.insert(query.value(0).toString(), query.value(1).toString());
+                    }
+                    db.close();
+
+                    DhcpHost *host = 0;
+                    if (general.contains("ip"))
+                    {
+                        host = DhcpConfig::instance().hostByIp(general["ip"]);
+                        if (!host)
+                        {
+                            FaithMessage::MsgError("Host configuration doesn't contain valid ip value").send(socket);
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        FaithMessage::MsgError("Host configuration doesn't contain ip value").send(socket);
+                        break;
+                    }
+                    if (general.contains("mac"))
+                    {
+                        if (host->hw()!=general["mac"])
+                        {
+                            FaithMessage::MsgError("Host configuration mac address don't match to host with selected ip address").send(socket);
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        FaithMessage::MsgError("Host configuration doesn't contain mac value").send(socket);
+                        break;
+                    }
+                    if (general.contains("hostname"))
+                    {
+                        if (host->hostname()!=general["hostname"])
+                        {
+                            FaithMessage::MsgError("Host configuration hostname don't match to host with selected ip address").send(socket);
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        FaithMessage::MsgError("Host configuration doesn't contain hostname value").send(socket);
+                        break;
+                    }
+                    quint32 ip = host->ip();
+                    QString new_filename = QString::number(ip, 16).rightJustified(8, '0')+".db";
+                    file->saveFile(Config::instance().configDir()+"/"+new_filename);
+                    FaithMessage::MsgOk().send(socket);
+                }
+                else
+                {
+                    FaithMessage::MsgError("Can't open host configuration database\n"+db.lastError().text()).send(socket);
+                }
             }
             else
             {
