@@ -137,7 +137,8 @@ bool Config::read_config()
             qDebug() << lab << ": 'ip_start' couldn't be less than 'ip_end'";
             return false;
         }
-        _laboratories.append(new ComputerLab(lab, ip_start, ip_end));
+        ComputerLab* newLab = new ComputerLab(lab, ip_start, ip_end);
+        _laboratories.append(newLab);
     }
 
     qDebug() << "Configuration... OK";
