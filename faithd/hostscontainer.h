@@ -7,7 +7,7 @@
 class HostsContainer
 {
 private:
-    QList<DhcpHost*> hosts;
+    QList<DhcpHost*> _hosts;
 protected:
     void clearHostsList();
     void destroyHosts();
@@ -23,6 +23,7 @@ public:
     void appendHost(DhcpHost* host);
     void appendHost(QList<DhcpHost*> host);
     void removeHost(DhcpHost* host);
+    QList<DhcpHost *> hosts() const;
 };
 
 #endif // HOSTSCONTAINER_H

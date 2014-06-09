@@ -39,7 +39,7 @@ Server::Server(quint16 port)
     QSqlDatabase::addDatabase("QSQLITE");
 }
 
-void AcceptMessageSendFile(FaithMessage msg, QTcpSocket* socket)
+void AcceptMessageSendFile(FaithMessage &msg, QTcpSocket* socket)
 {
     FdFile* file = static_cast<FdFile*>(msg.getData());
     if (file)
@@ -118,8 +118,9 @@ void AcceptMessageSendFile(FaithMessage msg, QTcpSocket* socket)
             }
             quint32 ip = host->ip();
             QString new_filename = QString::number(ip, 16).rightJustified(8, '0')+".db";
-            file->saveFile(Config::instance().configDir()+"/"+new_filename);
-            FaithMessage::MsgOk().send(socket);
+            bool success = file->saveFile(Config::instance().configDir()+"/"+new_filename);
+            if (success) FaithMessage::MsgOk().send(socket);
+            else FaithMessage::MsgError("SERVER ERROR: Can't save file in config_dir").send(socket);
         }
         else
         {
@@ -132,7 +133,7 @@ void AcceptMessageSendFile(FaithMessage msg, QTcpSocket* socket)
     }
 }
 
-void AcceptMessageAcceptIP(FaithMessage msg, QTcpSocket* socket)
+void AcceptMessageAcceptIP(FaithMessage &msg, QTcpSocket* socket)
 {
     FdHostInfo *hinfo = static_cast<FdHostInfo*>(msg.getData());
     if (hinfo)
@@ -183,6 +184,7 @@ void AcceptMessageAcceptIP(FaithMessage msg, QTcpSocket* socket)
             host->setIp(hinfo->ip());
             DhcpConfig::instance().appendHost(host);
             lab->appendHost(host);
+            DhcpConfig::instance().writeConfiguration();
         }
         FaithMessage::MsgOk().send(socket);
     }
@@ -192,7 +194,7 @@ void AcceptMessageAcceptIP(FaithMessage msg, QTcpSocket* socket)
     }
 }
 
-void AcceptMessageReserveIp(FaithMessage msg, QTcpSocket* socket)
+void AcceptMessageReserveIp(FaithMessage &msg, QTcpSocket* socket)
 {
     FdString* value = static_cast<FdString*>(msg.getData());
     if (value)
@@ -222,7 +224,7 @@ void AcceptMessageReserveIp(FaithMessage msg, QTcpSocket* socket)
     }
 }
 
-void AcceptMessageGetLabListOrHostInfo(FaithMessage msg, QTcpSocket* socket)
+void AcceptMessageGetLabListOrHostInfo(FaithMessage &msg, QTcpSocket* socket)
 {
     FdString* value = static_cast<FdString*>(msg.getData());
     if (value)

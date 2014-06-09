@@ -14,7 +14,7 @@ class DhcpConfig : public HostsContainer
 public:
     static DhcpConfig &instance();
     bool readConfiguration(QString filename);
-    bool writeConfiguration(QString filename) const;
+    bool writeConfiguration(QString filename=QString()) const;
     QString current_dhcp_file() const;
 };
 

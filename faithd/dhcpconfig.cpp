@@ -173,6 +173,7 @@ bool DhcpConfig::readConfiguration(QString filename)
 
 bool DhcpConfig::writeConfiguration(QString filename) const
 {
+    if (filename.isEmpty()) filename = this->_current_dhcp_file;
     QFile file(filename);
     if (file.open(QIODevice::WriteOnly | QFile::Text))
     {

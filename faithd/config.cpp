@@ -1,4 +1,5 @@
 #include "config.h"
+#include "dhcpconfig.h"
 
 Config::Config()// : settings_file("/etc/fai/faith.ini")
 {
@@ -171,4 +172,26 @@ ComputerLab *Config::getLab(const QString &name)
 QString Config::configDir() const
 {
     return _config_dir;
+}
+
+bool Config::assignHostToLaboratories()
+{
+    static bool done = false;
+    if (done) return false;
+    else
+    {
+        done = true;
+        foreach(DhcpHost* host, DhcpConfig::instance().hosts())
+        {
+            foreach (ComputerLab* lab, _laboratories) {
+                if (host->ip() >= lab->ip_start() && host->ip() <= lab->ip_end())
+                {
+                    lab->appendHost(host);
+                    break;
+                }
+            }
+
+        }
+        return true;
+    }
 }
