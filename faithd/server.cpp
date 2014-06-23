@@ -13,6 +13,7 @@
 #include <QTemporaryFile>
 #include <QSqlError>
 #include <QHash>
+#include <QCryptographicHash>
 
 QString generate_hostname(ComputerLab *lab, quint32 ip)
 {
@@ -37,6 +38,25 @@ Server::Server(quint16 port)
 {
     _server.listen(QHostAddress::AnyIPv4, port);
     QSqlDatabase::addDatabase("QSQLITE");
+}
+
+void AcceptMessageGetFileList(FaithMessage &msg, QTcpSocket* socket)
+{
+    Q_UNUSED(msg)
+    QDir dir(Config::instance().configDir());
+    QStringList file_list;
+    foreach (QFileInfo finfo, dir.entryInfoList()) {
+        QFile f(finfo.absoluteFilePath());
+        if (f.open(QIODevice::ReadOnly))
+        {
+            QByteArray bufor = f.readAll();
+            f.close();
+            QString filename = finfo.fileName();
+            QString md5 = QString(QCryptographicHash::hash(bufor, QCryptographicHash::Md5).toHex());
+            file_list.append(filename+"#"+md5);
+        }
+    }
+    FaithMessage::MsgFileList(file_list).send(socket);
 }
 
 void AcceptMessageSendFile(FaithMessage &msg, QTcpSocket* socket)
@@ -291,6 +311,11 @@ void Server::acceptConnection()
         case Faithcore::SEND_FILE:
         {
             AcceptMessageSendFile(msg, socket);
+            break;
+        }
+        case Faithcore::GET_FILE_LIST:
+        {
+            AcceptMessageGetFileList(msg, socket);
             break;
         }
         default:
