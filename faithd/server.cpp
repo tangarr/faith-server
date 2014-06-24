@@ -36,8 +36,34 @@ QString generate_hostname(ComputerLab *lab, quint32 ip)
 
 Server::Server(quint16 port)
 {
-    _server.listen(QHostAddress::AnyIPv4, port);
-    QSqlDatabase::addDatabase("QSQLITE");
+    if (_server.listen(QHostAddress::AnyIPv4, port))
+    {
+        qDebug() << "Starting server at port" << port;
+        QSqlDatabase::addDatabase("QSQLITE");
+    }
+    else
+    {
+        qDebug() << "Can't open port" << port;
+        exit(1);
+    }
+}
+
+void AcceptMessageGetFile(FaithMessage &msg, QTcpSocket* socket)
+{
+    QDir dir(Config::instance().configDir());
+    FdString* str = static_cast<FdString*>(msg.getData());
+    if (!str)
+    {
+        FaithMessage::MsgError("Can't extract filename from message data").send(socket);
+        return;
+    }
+    QString filename = str->value();
+    if (filename.isEmpty())
+    {
+        FaithMessage::MsgError("Recived empty filename").send(socket);
+        return;
+    }
+    FaithMessage::MsgSendFile(dir.filePath(filename)).send(socket);
 }
 
 void AcceptMessageGetFileList(FaithMessage &msg, QTcpSocket* socket)
@@ -74,77 +100,81 @@ void AcceptMessageSendFile(FaithMessage &msg, QTcpSocket* socket)
             FaithMessage::MsgError("Recived FdFile have no filename").send(socket);
             return;
         }
-        if (file->filename()!="host.db")
+        if (file->filename()=="host.db")
         {
-            FaithMessage::MsgError("Server was expecting to recive file host.db").send(socket);
-            return;
-        }
-        QTemporaryFile tmp_file;
-        tmp_file.open();
-        tmp_file.close();
-        file->saveFile(tmp_file.fileName());
-        QSqlDatabase db = QSqlDatabase::database();
-        db.setDatabaseName(tmp_file.fileName());
-        if (db.open())
-        {
-            QHash<QString, QString> general;
-            QSqlQuery query("select * from general");
-            while (query.next())
+            QTemporaryFile tmp_file;
+            tmp_file.open();
+            tmp_file.close();
+            file->saveFile(tmp_file.fileName());
+            QSqlDatabase db = QSqlDatabase::database();
+            db.setDatabaseName(tmp_file.fileName());
+            if (db.open())
             {
-                general.insert(query.value(0).toString(), query.value(1).toString());
-            }
-            db.close();
+                QHash<QString, QString> general;
+                QSqlQuery query("select * from general");
+                while (query.next())
+                {
+                    general.insert(query.value(0).toString(), query.value(1).toString());
+                }
+                db.close();
 
-            DhcpHost *host = 0;
-            if (general.contains("ip"))
-            {
-                host = DhcpConfig::instance().hostByIp(general["ip"]);
-                if (!host)
+                DhcpHost *host = 0;
+                if (general.contains("ip"))
                 {
-                    FaithMessage::MsgError("Host configuration doesn't contain valid ip value").send(socket);
+                    host = DhcpConfig::instance().hostByIp(general["ip"]);
+                    if (!host)
+                    {
+                        FaithMessage::MsgError("Host configuration doesn't contain valid ip value").send(socket);
+                        return;
+                    }
+                }
+                else
+                {
+                    FaithMessage::MsgError("Host configuration doesn't contain ip value").send(socket);
                     return;
                 }
+                if (general.contains("mac"))
+                {
+                    if (host->hw()!=general["mac"])
+                    {
+                        FaithMessage::MsgError("Host configuration mac address don't match to host with selected ip address").send(socket);
+                        return;
+                    }
+                }
+                else
+                {
+                    FaithMessage::MsgError("Host configuration doesn't contain mac value").send(socket);
+                    return;
+                }
+                if (general.contains("hostname"))
+                {
+                    if (host->hostname()!=general["hostname"])
+                    {
+                        FaithMessage::MsgError("Host configuration hostname don't match to host with selected ip address").send(socket);
+                        return;
+                    }
+                }
+                else
+                {
+                    FaithMessage::MsgError("Host configuration doesn't contain hostname value").send(socket);
+                    return;
+                }
+                quint32 ip = host->ip();
+                QString new_filename = QString::number(ip, 16).rightJustified(8, '0')+".db";
+                bool success = file->saveFile(Config::instance().configDir()+"/"+new_filename);
+                if (success) FaithMessage::MsgOk().send(socket);
+                else FaithMessage::MsgError("SERVER ERROR: Can't save file in config_dir").send(socket);
             }
             else
             {
-                FaithMessage::MsgError("Host configuration doesn't contain ip value").send(socket);
-                return;
+                FaithMessage::MsgError("Can't open host configuration database\n"+db.lastError().text()).send(socket);
             }
-            if (general.contains("mac"))
-            {
-                if (host->hw()!=general["mac"])
-                {
-                    FaithMessage::MsgError("Host configuration mac address don't match to host with selected ip address").send(socket);
-                    return;
-                }
-            }
-            else
-            {
-                FaithMessage::MsgError("Host configuration doesn't contain mac value").send(socket);
-                return;
-            }
-            if (general.contains("hostname"))
-            {
-                if (host->hostname()!=general["hostname"])
-                {
-                    FaithMessage::MsgError("Host configuration hostname don't match to host with selected ip address").send(socket);
-                    return;
-                }
-            }
-            else
-            {
-                FaithMessage::MsgError("Host configuration doesn't contain hostname value").send(socket);
-                return;
-            }
-            quint32 ip = host->ip();
-            QString new_filename = QString::number(ip, 16).rightJustified(8, '0')+".db";
-            bool success = file->saveFile(Config::instance().configDir()+"/"+new_filename);
-            if (success) FaithMessage::MsgOk().send(socket);
-            else FaithMessage::MsgError("SERVER ERROR: Can't save file in config_dir").send(socket);
         }
         else
         {
-            FaithMessage::MsgError("Can't open host configuration database\n"+db.lastError().text()).send(socket);
+            bool success = file->saveFile(Config::instance().configDir()+"/"+file->filename());
+            if (success) FaithMessage::MsgOk().send(socket);
+            else FaithMessage::MsgError("SERVER ERROR: Can't save file in config_dir").send(socket);
         }
     }
     else
@@ -316,6 +346,11 @@ void Server::acceptConnection()
         case Faithcore::GET_FILE_LIST:
         {
             AcceptMessageGetFileList(msg, socket);
+            break;
+        }
+        case Faithcore::GET_FILE:
+        {
+            AcceptMessageGetFile(msg, socket);
             break;
         }
         default:
