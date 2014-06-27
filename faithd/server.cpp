@@ -15,6 +15,8 @@
 #include <QHash>
 #include <QCryptographicHash>
 
+#include "fdiplist.h"
+
 QString generate_hostname(ComputerLab *lab, quint32 ip)
 {
     int bytes;
@@ -309,6 +311,25 @@ void AcceptMessageGetLabListOrHostInfo(FaithMessage &msg, QTcpSocket* socket)
     }
 }
 
+void AcceptMessageRequestInstall(FaithMessage &msg, QTcpSocket* socket)
+{
+    FdIpList *ipList = static_cast<FdIpList*>(msg.getData());
+    if (!ipList)
+    {
+        FaithMessage::MsgError("Can't extract ip list from message").send(socket);
+        return;
+    }
+    for (int i=0; i<ipList->count(); i++)
+    {
+        QString ip = ipList->ipString(i);
+        qDebug() << ip;
+
+        //TUTAJ TRZEBA WYWOŁAĆ UTWORZENIE KONFIGURACJI PXE
+        //TUTAJ TRZEBA WYSLAC PAKIET WOL
+    }
+    FaithMessage::MsgOk().send(socket);
+}
+
 void Server::acceptConnection()
 {
     bool newConnection = _server.waitForNewConnection(-1);
@@ -316,7 +337,7 @@ void Server::acceptConnection()
     {
         QTcpSocket* socket = _server.nextPendingConnection();
         qDebug() << socket->peerAddress() << " connected";
-        socket->waitForReadyRead();
+        //socket->waitForReadyRead();
         FaithMessage msg;
         msg.recive(socket);
 
@@ -351,6 +372,11 @@ void Server::acceptConnection()
         case Faithcore::GET_FILE:
         {
             AcceptMessageGetFile(msg, socket);
+            break;
+        }
+        case Faithcore::REQUEST_INSTALL:
+        {
+            AcceptMessageRequestInstall(msg, socket);
             break;
         }
         default:
