@@ -15,6 +15,28 @@
 #include <QHash>
 #include <QCryptographicHash>
 
+#include <QUdpSocket>
+
+void sendWakeOnLanMagicPacket(QString ip)
+{
+    DhcpHost* host = DhcpConfig::instance().hostByIp(ip);
+    if (host)
+    {
+        QStringList tmp = host->hw().split(":");
+        QByteArray mac;
+        for (int i=0;i<6;i++)
+        {
+            mac.append((char)tmp.at(i).toUInt(0,16));
+        }
+        QByteArray magic_packet;
+        magic_packet.append("\xFF\xFF\xFF\xFF\xFF\xFF");
+        for (int i=0;i<16;i++) magic_packet.append(mac);
+        qDebug() << magic_packet;
+        QUdpSocket socket;
+        socket.writeDatagram(magic_packet, QHostAddress::Broadcast, 8000);
+    }
+}
+
 QString generate_hostname(ComputerLab *lab, quint32 ip)
 {
     int bytes;

@@ -8,7 +8,7 @@ class Server
     QTcpServer _server;
 public:
     Server(quint16 port);
-    void acceptConnection();    
+    void acceptConnection();
 };
 
 #endif // SERVER_H
