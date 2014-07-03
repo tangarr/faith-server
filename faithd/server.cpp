@@ -7,7 +7,7 @@
 #include "fdhostinfo.h"
 #include "dhcpconfig.h"
 #include "fdfile.h"
-
+#include "fdiplist.h"
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QTemporaryFile>
@@ -15,12 +15,14 @@
 #include <QHash>
 #include <QCryptographicHash>
 #include <QUdpSocket>
+#include <QProcess>
 
 void sendWakeOnLanMagicPacket(QString ip)
 {
     DhcpHost* host = DhcpConfig::instance().hostByIp(ip);
     if (host)
     {
+        qDebug() << "host:" << host->ip() << host->hw() << host->hostname();
         QStringList tmp = host->hw().split(":");
         QByteArray mac;
         for (int i=0;i<6;i++)
@@ -29,13 +31,49 @@ void sendWakeOnLanMagicPacket(QString ip)
         }
         QByteArray magic_packet;
         magic_packet.append("\xFF\xFF\xFF\xFF\xFF\xFF");
-        for (int i=0;i<16;i++) magic_packet.append(mac);
-        qDebug() << magic_packet;
-        QUdpSocket socket;
-        socket.writeDatagram(magic_packet, QHostAddress::Broadcast, 8000);
+        for (int i=0;i<16;i++) magic_packet.append(mac);  
+        QUdpSocket socket;             
+        foreach (QNetworkInterface iface, QNetworkInterface::allInterfaces()) {
+            QList <QNetworkAddressEntry> entries = iface.addressEntries();
+            if (entries.count())
+            {
+                quint32 e_ip = entries[0].ip().toIPv4Address();
+                quint32 e_broadcast = entries[0].broadcast().toIPv4Address();
+                if (e_ip < host->ip() && e_broadcast > host->ip())
+                {
+                    socket.writeDatagram(magic_packet, entries[0].broadcast(), 8000);
+                }
+            }
+        }
     }
 }
-#include "fdiplist.h"
+
+
+bool restartDhcpServer()
+{
+   return  QProcess::execute("/etc/init.d/isc-dhcp-server restart");
+}
+
+bool generatePxeDefault()
+{
+    QString port = QString::number(Config::instance().port());
+    QString cmd = "/usr/sbin/fai-chboot -iF -k \"FAI_ACTION=faith FAITH_PORT="+port+"\" default ";
+    qDebug() << cmd;
+    return  QProcess::execute(cmd);
+}
+bool generatePxeLocalboot(QString ip)
+{
+    QString cmd = "/usr/sbin/fai-chboot -o "+ip;
+    qDebug() << cmd;
+    return  QProcess::execute(cmd);
+}
+bool generatePxeInstall(QString ip)
+{
+    QString port = QString::number(Config::instance().port());
+    QString cmd = "/usr/sbin/fai-chboot -IFv -k \"FAITH_PORT="+port+"\" "+ip;
+    qDebug() << cmd;
+    return  QProcess::execute(cmd);
+}
 
 QString generate_hostname(ComputerLab *lab, quint32 ip)
 {
@@ -62,6 +100,7 @@ Server::Server(quint16 port)
     {
         qDebug() << "Starting server at port" << port;
         QSqlDatabase::addDatabase("QSQLITE");
+        generatePxeDefault();
     }
     else
     {
@@ -184,7 +223,12 @@ void AcceptMessageSendFile(FaithMessage &msg, QTcpSocket* socket)
                 quint32 ip = host->ip();
                 QString new_filename = QString::number(ip, 16).rightJustified(8, '0')+".db";
                 bool success = file->saveFile(Config::instance().configDir()+"/"+new_filename);
-                if (success) FaithMessage::MsgOk().send(socket);
+                if (success)
+                {
+                    FaithMessage::MsgOk().send(socket);
+                    restartDhcpServer();
+                    generatePxeLocalboot(Faithcore::ipFromInt(ip));
+                }
                 else FaithMessage::MsgError("SERVER ERROR: Can't save file in config_dir").send(socket);
             }
             else
@@ -195,8 +239,22 @@ void AcceptMessageSendFile(FaithMessage &msg, QTcpSocket* socket)
         else
         {
             bool success = file->saveFile(Config::instance().configDir()+"/"+file->filename());
-            if (success) FaithMessage::MsgOk().send(socket);
-            else FaithMessage::MsgError("SERVER ERROR: Can't save file in config_dir").send(socket);
+            if (success)
+            {
+                FaithMessage::MsgOk().send(socket);
+                if (file->filename().split(".").last()=="diskconfig")
+                {
+                    QString src = Config::instance().configDir()+"/"+file->filename();
+                    QString dst = Config::instance().faiConfigDir()+"/disk_config/"+(file->filename().remove(".diskconfig"));
+                    QDir dir;
+                    if (!dir.rename(src, dst))
+                    {
+                        system(QString("mv "+src+" "+dst).toStdString().c_str());
+                    }
+
+                }
+            }
+            else FaithMessage::MsgError("SERVER ERROR: Can't save file in config_dir").send(socket);            
         }
     }
     else
@@ -256,6 +314,16 @@ void AcceptMessageAcceptIP(FaithMessage &msg, QTcpSocket* socket)
             host->setIp(hinfo->ip());
             DhcpConfig::instance().appendHost(host);
             lab->appendHost(host);
+
+            QString filename = Config::instance().faiConfigDir()+"/class/"+lab->name().toUpper()+".hostlist";
+            QFile file(filename);
+            if (file.open(QIODevice::Append))
+            {
+                QTextStream stream(&file);
+                stream << Faithcore::ipFromInt(host->ip()) << "\n";
+                file.close();
+            }
+
             bool succes = DhcpConfig::instance().writeConfiguration();
             if (succes) qDebug() << DhcpConfig::instance().current_dhcp_file() << " written";
             else qDebug() << "can't write " << DhcpConfig::instance().current_dhcp_file();
@@ -305,22 +373,31 @@ void AcceptMessageGetLabListOrHostInfo(FaithMessage &msg, QTcpSocket* socket)
     {
         ComputerLab* lab = 0;
         QString mac = value->value();
+        qDebug() << "mac: " << mac;
         foreach (QString lab_name, Config::instance().labList()) {
             ComputerLab* tmp = Config::instance().getLab(lab_name);
-            if (tmp->containHw(mac))
+            qDebug() << tmp->name();
+            foreach (DhcpHost* h, tmp->hosts())
             {
+                qDebug() << h->ip() << h->hw() << h->hostname();
+            }
+
+            if (tmp->containHw(mac))
+            {                
                 lab = tmp;
                 break;
             }
         }
         if (lab)
         {
+            qDebug() << lab;
             DhcpHost* host = lab->hostByHw(mac);
             FaithMessage resp = FaithMessage::MsgHostInfo(lab->name(), host->hostname(), host->ip());
             resp.send(socket);
         }
         else
         {
+            qDebug() << "BLAD";
             FaithMessage resp = FaithMessage::MsgLabList(Config::instance().labList());
             resp.send(socket);
         }
@@ -343,11 +420,32 @@ void AcceptMessageRequestInstall(FaithMessage &msg, QTcpSocket* socket)
     {
         QString ip = ipList->ipString(i);
         qDebug() << ip;
-
-        //TUTAJ TRZEBA WYWOŁAĆ UTWORZENIE KONFIGURACJI PXE
-        //TUTAJ TRZEBA WYSLAC PAKIET WOL
+        generatePxeInstall(ip);
+        sendWakeOnLanMagicPacket(ip);
     }
     FaithMessage::MsgOk().send(socket);
+}
+
+void AcceptMessageInstallCompleted(FaithMessage &msg, QTcpSocket* socket)
+{
+    Q_UNUSED(msg)
+    FaithMessage::MsgOk().send(socket);
+    generatePxeLocalboot(socket->peerAddress().toString());
+    qDebug() << "installation complete on host "+socket->peerAddress().toString();
+}
+
+void AcceptMessageInstallAborted(FaithMessage &msg, QTcpSocket* socket)
+{
+    FdString* str = static_cast<FdString*>(msg.getData());
+    if (str)
+    {
+        FaithMessage::MsgOk().send(socket);
+    }
+    else
+    {
+        FaithMessage::MsgError("Can't extract string from message").send(socket);
+    }
+    qDebug() << "installation aborted on host "+socket->peerAddress().toString();
 }
 
 void Server::acceptConnection()
@@ -397,6 +495,16 @@ void Server::acceptConnection()
         case Faithcore::REQUEST_INSTALL:
         {
             AcceptMessageRequestInstall(msg, socket);
+            break;
+        }
+        case Faithcore::INSTALL_COMPLETE:
+        {
+            AcceptMessageInstallCompleted(msg, socket);
+            break;
+        }
+        case Faithcore::INSTALL_ABORTED:
+        {
+            AcceptMessageInstallAborted(msg, socket);
             break;
         }
         default:

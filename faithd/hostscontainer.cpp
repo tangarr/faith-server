@@ -49,17 +49,8 @@ bool HostsContainer::containsIp(const quint32 &ip) const
 
 bool HostsContainer::containHw(const QString &hw) const
 {
-    const QRegExp regexp("([0-9a-f][0-9a-f]:){5}([0-9a-f][0-9a-f])");
-    if (!regexp.exactMatch(hw)) return false;
     foreach (DhcpHost* host, _hosts) {
-        QStringList a,b;
-        a = hw.split(":");
-        b = host->hw().split(":");
-        for (int i=0; i<6; i++)
-        {
-            if (a[i].toInt(0,16)!=b[i].toInt(0,16)) return false;
-        }
-        return true;
+        if (host->hw()==hw) return true;
     }
     return false;
 }
@@ -77,17 +68,8 @@ DhcpHost *HostsContainer::hostByIp(const QString &ip) const
 
 DhcpHost *HostsContainer::hostByHw(const QString &hw) const
 {
-    const QRegExp regexp("([0-9a-f][0-9a-f]:){5}([0-9a-f][0-9a-f])");
-    if (!regexp.exactMatch(hw)) return 0;
     foreach (DhcpHost* h, _hosts) {
-        QStringList a,b;
-        a = hw.split(":");
-        b = h->hw().split(":");
-        for (int i=0; i<6; i++)
-        {
-            if (a[i].toInt(0,16)!=b[i].toInt(0,16)) return 0;
-        }
-        return h;
+        if (h->hw()==hw) return h;
     }
     return 0;
 }
