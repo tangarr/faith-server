@@ -242,7 +242,8 @@ void AcceptMessageSendFile(FaithMessage &msg, QTcpSocket* socket)
             if (success)
             {
                 FaithMessage::MsgOk().send(socket);
-                if (file->filename().split(".").last()=="diskconfig")
+                QString ext = file->filename().split(".").last();
+                if (ext=="diskconfig")
                 {
                     QString src = Config::instance().configDir()+"/"+file->filename();
                     QString dst = Config::instance().faiConfigDir()+"/disk_config/"+(file->filename().remove(".diskconfig"));
@@ -251,7 +252,30 @@ void AcceptMessageSendFile(FaithMessage &msg, QTcpSocket* socket)
                     {
                         system(QString("mv "+src+" "+dst).toStdString().c_str());
                     }
-
+                }
+                else if (ext=="var" || ext=="software")
+                {
+                    QString src = Config::instance().configDir()+"/"+file->filename();
+                    QString dst = Config::instance().faiConfigDir()+"/class/"+(file->filename());
+                    QDir dir;
+                    if (!dir.rename(src, dst))
+                    {
+                        system(QString("mv "+src+" "+dst).toStdString().c_str());
+                    }
+                }
+                else if (ext=="script")
+                {
+                    QString labname = file->filename().split(".").first();
+                    QDir dir(Config::instance().faiConfigDir()+"/scripts/"+labname);
+                    if (!dir.exists()) dir.mkpath(dir.absolutePath());
+                    QString src = Config::instance().configDir()+"/"+file->filename();
+                    QString dst = Config::instance().faiConfigDir()+"/scripts/"+labname+"/"+(file->filename().remove(labname+".").remove(".script"));
+                    if (!dir.rename(src, dst))
+                    {
+                        system(QString("mv "+src+" "+dst).toStdString().c_str());
+                    }
+                    QFile f(dst);
+                    f.setPermissions(QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner | QFile::ReadGroup | QFile::ExeGroup | QFile::ReadOther | QFile::ExeOther);
                 }
             }
             else FaithMessage::MsgError("SERVER ERROR: Can't save file in config_dir").send(socket);            
