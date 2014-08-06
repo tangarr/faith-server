@@ -15,12 +15,12 @@ QString DhcpConfig::current_dhcp_file() const
 {
     return _current_dhcp_file;
 }
-
+/*
 void DhcpConfig::appendHost(DhcpHost *host)
 {
     config.append(host);
     HostsContainer::appendHost(host);
-}
+}*/
 
 DhcpConfig &DhcpConfig::instance()
 {
@@ -164,7 +164,8 @@ bool DhcpConfig::readConfiguration(QString filename)
         config.append(parseDhcp(dhcpd_conf, pos));
         foreach (DhcpObject* ob, config) {
             DhcpBlock* block = dynamic_cast<DhcpBlock*>(ob);
-            if (block) appendHostList(block->getHosts());
+            if (block)
+                appendHostList(block->getHosts());
         }
         qDebug() << "DHCP config succesfull parsed";
         qDebug() << current_dhcp_file();

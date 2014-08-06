@@ -85,7 +85,7 @@ DhcpHost *HostsContainer::hostByName(const QString &hostname) const
 void HostsContainer::appendHost(DhcpHost *host)
 {
     host->addObserver(this);
-    _hosts.append(host);
+    if (!_hosts.contains(host)) _hosts.append(host);
 }
 
 void HostsContainer::appendHostList(QList<DhcpHost *> hostsList)
