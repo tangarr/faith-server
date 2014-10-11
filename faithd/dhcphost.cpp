@@ -54,7 +54,8 @@ void DhcpHost::append(DhcpObject *ob)
 }
 void DhcpHost::addObserver(HostsContainer *observer)
 {
-    observers.append(observer);
+    if (!observers.contains(observer))
+        observers.append(observer);
 }
 
 DhcpHost::DhcpHost(QString hostname) : DhcpBlock(hostname.trimmed())

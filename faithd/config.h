@@ -31,6 +31,7 @@ public:
     ComputerLab *getLab(const QString& name);
     QString configDir() const;
     bool assignHostToLaboratories();
+    QString faiConfigDir();
 };
 
 #endif // CONFIG_H
