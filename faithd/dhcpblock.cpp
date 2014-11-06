@@ -49,12 +49,7 @@ void DhcpBlock::appendList(QList<DhcpObject *>list)
 QList<DhcpHost *> DhcpBlock::getHosts()
 {
     QList<DhcpHost *> list;
-
-    if (dynamic_cast<DhcpHost*>(this))
-    {
-        list.append(dynamic_cast<DhcpHost*>(this));
-    }
-    else foreach (DhcpObject* ob, children) {
+    foreach (DhcpObject* ob, children) {
         DhcpHost* host = dynamic_cast<DhcpHost*>(ob);
         if (host) list.append(host);
         else

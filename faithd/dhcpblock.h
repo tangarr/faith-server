@@ -22,7 +22,7 @@ public:
     virtual QString toString(int level) const;
     virtual void append(DhcpObject*);
     void appendList(QList<DhcpObject *>);
-    QList<DhcpHost *> getHosts();
+    virtual QList<DhcpHost *> getHosts();
 
 };
 

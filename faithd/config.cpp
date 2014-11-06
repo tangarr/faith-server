@@ -177,19 +177,27 @@ QString Config::configDir() const
 bool Config::assignHostToLaboratories()
 {
     static bool done = false;
-    if (done) return false;
+    if (done)
+    {
+        qDebug() << Q_FUNC_INFO << "FALSE";
+        return false;
+    }
     else
     {
+        qDebug() << Q_FUNC_INFO << "TRUE";
         done = true;
         foreach(DhcpHost* host, DhcpConfig::instance().hosts())
-        {
+        {            
+            bool found_lab = false;
             foreach (ComputerLab* lab, _laboratories) {
                 if (host->ip() >= lab->ip_start() && host->ip() <= lab->ip_end())
                 {
+                    found_lab = true;
                     lab->appendHost(host);
                     break;
                 }
             }
+            qDebug() << host->hostname() << host->hw() << host->ip() << found_lab;
         }
 
         foreach (ComputerLab* lab, _laboratories) {

@@ -60,6 +60,7 @@ DhcpHost *HostsContainer::hostByIp(const QString &ip) const
     const QRegExp regexp("(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9]\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])");
     if (!regexp.exactMatch(ip)) return 0;
     quint32 ip_a = Faithcore::ipFromString(ip);
+    qDebug() <<Q_FUNC_INFO << ip_a << ip;
     foreach (DhcpHost* host, _hosts) {
         if (ip_a == host->ip()) return host;
     }
@@ -84,8 +85,13 @@ DhcpHost *HostsContainer::hostByName(const QString &hostname) const
 
 void HostsContainer::appendHost(DhcpHost *host)
 {
+    qDebug() << Q_FUNC_INFO;
+    qDebug() << host->hostname() << host->hw();
     host->addObserver(this);
-    if (!_hosts.contains(host)) _hosts.append(host);
+    if (!_hosts.contains(host))
+    {
+        _hosts.append(host);
+    }
 }
 
 void HostsContainer::appendHostList(QList<DhcpHost *> hostsList)

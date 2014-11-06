@@ -52,6 +52,11 @@ void DhcpHost::append(DhcpObject *ob)
     }
     else DhcpBlock::append(ob);
 }
+
+QList<DhcpHost *> DhcpHost::getHosts()
+{
+    return QList<DhcpHost*>({this});
+}
 void DhcpHost::addObserver(HostsContainer *observer)
 {
     if (!observers.contains(observer))

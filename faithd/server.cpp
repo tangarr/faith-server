@@ -185,8 +185,15 @@ void AcceptMessageSendFile(FaithMessage &msg, QTcpSocket* socket)
                     host = DhcpConfig::instance().hostByIp(general["ip"]);
                     if (!host)
                     {
-                        FaithMessage::MsgError("Host configuration doesn't contain valid ip value").send(socket);
+                        FaithMessage::MsgError("Host ip not in Dhcp configuration").send(socket);
                         return;
+                    }
+                    else
+                    {
+                        qDebug() << "SEND_FILE found ip of host:";
+                        qDebug() << host->hostname();
+                        qDebug() << host->ip();
+                        qDebug() << host->hw();
                     }
                 }
                 else
@@ -400,22 +407,19 @@ void AcceptMessageGetLabListOrHostInfo(FaithMessage &msg, QTcpSocket* socket)
         qDebug() << "mac: " << mac;
         foreach (QString lab_name, Config::instance().labList()) {
             ComputerLab* tmp = Config::instance().getLab(lab_name);
-            qDebug() << tmp->name();
-            foreach (DhcpHost* h, tmp->hosts())
-            {
-                qDebug() << h->ip() << h->hw() << h->hostname();
-            }
-
             if (tmp->containHw(mac))
-            {                
+            {
+                qDebug() << tmp->name() << "TRUE";
                 lab = tmp;
                 break;
             }
+            qDebug() << tmp->name() << "FALSE";
         }
         if (lab)
         {
             qDebug() << lab;
             DhcpHost* host = lab->hostByHw(mac);
+            qDebug() << "MsgHostInfo:" << lab->name() << host->hostname() << host->ip();
             FaithMessage resp = FaithMessage::MsgHostInfo(lab->name(), host->hostname(), host->ip());
             resp.send(socket);
         }

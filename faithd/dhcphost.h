@@ -26,6 +26,8 @@ public:
     void append(DhcpObject *ob);
 
     friend class HostsContainer;
+
+    QList<DhcpHost *> getHosts();
 };
 
 #endif // DHCPHOST_H
